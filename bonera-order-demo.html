@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bonera 受注システム — デモ</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #f7f6f3;
+    --surface:  #ffffff;
+    --border:   #e2e0d8;
+    --text:     #1a1a18;
+    --muted:    #6b6a64;
+    --hint:     #a8a79f;
+    --green:    #1a6e4a;
+    --green-bg: #eaf4ee;
+    --green-bd: #b4d9c4;
+    --red:      #c23b2a;
+    --red-bg:   #fdf0ee;
+    --accent:   #1a1a18;
+    --radius:   10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── SCREEN SYSTEM ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── LOGIN ── */
+  .login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: var(--bg);
+  }
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 380px;
+  }
+  .login-logo {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .login-tagline {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+  .field input {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .btn-login {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s;
+  }
+  .btn-login:hover { opacity: 0.85; }
+  .login-error {
+    display: none;
+    margin-top: 12px;
+    padding: 10px 13px;
+    background: var(--red-bg);
+    border: 1px solid #f0c4bd;
+    border-radius: var(--radius);
+    font-size: 12px;
+    color: var(--red);
+  }
+  .demo-hint {
+    margin-top: 24px;
+    padding: 14px;
+    background: var(--bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .demo-hint-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .demo-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 12px;
+  }
+  .demo-code { font-family: monospace; font-size: 12px; color: var(--text); }
+  .demo-disc {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--green-bg);
+    border: 1px solid var(--green-bd);
+    color: var(--green);
+    font-weight: 500;
+  }
+  .demo-disc.none { background: var(--bg); border-color: var(--border); color: var(--muted); }
+  .demo-use {
+    font-size: 11px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+
+  /* ── APP HEADER ── */
+  .app-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .app-logo { font-size: 16px; font-weight: 700; letter-spacing: 0.07em; }
+  .app-logo span { font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 8px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .user-name { font-size: 13px; font-weight: 500; }
+  .user-disc {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--green-bg);
+    border: 1px solid var(--green-bd);
+    color: var(--green);
+    font-weight: 500;
+  }
+  .btn-logout {
+    font-size: 12px;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+  }
+  .btn-logout:hover { background: var(--bg); }
+
+  /* ── DISCOUNT BANNER ── */
+  .disc-banner {
+    background: var(--green-bg);
+    border-bottom: 1px solid var(--green-bd);
+    padding: 9px 24px;
+    font-size: 12px;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .disc-banner.hidden { display: none; }
+
+  /* ── MAIN LAYOUT ── */
+  .app-body { display: flex; min-height: calc(100vh - 56px); }
+  .catalog-panel { flex: 1; padding: 20px 24px; min-width: 0; }
+  .cart-panel {
+    width: 300px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── CATALOG ── */
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-btn {
+    font-size: 12px;
+    padding: 5px 13px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+  .filter-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  .product-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .product-card:hover {
+    border-color: #bbb;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .product-icon {
+    font-size: 28px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+  .product-id { font-size: 10px; color: var(--hint); margin-bottom: 2px; font-family: monospace; }
+  .product-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .price-row { display: flex; align-items: baseline; gap: 5px; margin-bottom: 8px; }
+  .price-orig { font-size: 11px; color: var(--hint); text-decoration: line-through; }
+  .price-disc { font-size: 13px; font-weight: 600; color: var(--green); }
+  .price-normal { font-size: 12px; color: var(--muted); }
+  .color-dots { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
+  .color-dot-sm {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.12);
+    flex-shrink: 0;
+  }
+  .btn-add {
+    width: 100%;
+    padding: 7px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text);
+    transition: background 0.12s, border-color 0.12s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .btn-add:hover { background: var(--bg); border-color: #bbb; }
+
+  /* ── CART ── */
+  .cart-items { flex: 1; overflow-y: auto; margin-bottom: 12px; }
+  .cart-empty {
+    padding: 32px 0;
+    text-align: center;
+    color: var(--hint);
+    font-size: 13px;
+  }
+  .cart-empty-icon { font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.4; }
+  .cart-item {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: 6px;
+  }
+  .ci-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .ci-name { font-size: 12px; font-weight: 600; }
+  .ci-code { font-size: 10px; color: var(--hint); font-family: monospace; }
+  .ci-detail { font-size: 11px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 4px; }
+  .ci-color-dot { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
+  .ci-price { font-size: 11px; color: var(--green); font-weight: 500; margin-top: 3px; }
+  .btn-remove {
+    background: none; border: none; cursor: pointer;
+    color: var(--hint); font-size: 16px; line-height: 1;
+    padding: 0; flex-shrink: 0;
+  }
+  .btn-remove:hover { color: var(--red); }
+
+  .cart-footer { border-top: 1px solid var(--border); padding-top: 14px; }
+  .sum-row {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--muted); margin-bottom: 6px;
+  }
+  .sum-row.saving { color: var(--green); }
+  .sum-row.total { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+  .note-area {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    resize: none;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--surface);
+    margin-bottom: 10px;
+    outline: none;
+  }
+  .note-area:focus { border-color: var(--accent); }
+  .btn-submit {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-submit:hover { opacity: 0.85; }
+  .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── SUCCESS BAR ── */
+  .success-bar {
+    display: none;
+    background: var(--green-bg);
+    border-bottom: 1px solid var(--green-bd);
+    padding: 11px 24px;
+    font-size: 12px;
+    color: var(--green);
+    align-items: center;
+    gap: 6px;
+  }
+  .success-bar.show { display: flex; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    width: 100%;
+    max-width: 360px;
+    border: 1px solid var(--border);
+  }
+  .modal-name { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .modal-id { font-size: 11px; color: var(--hint); font-family: monospace; margin-bottom: 16px; }
+  .opt-label {
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    letter-spacing: 0.05em; text-transform: uppercase;
+    margin-bottom: 8px; margin-top: 14px;
+  }
+  .color-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .color-opt {
+    width: 28px; height: 28px; border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.12s, transform 0.1s;
+  }
+  .color-opt:hover { transform: scale(1.1); }
+  .color-opt.selected { border-color: var(--accent); }
+  .size-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .size-opt {
+    padding: 5px 13px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text);
+    transition: all 0.12s;
+  }
+  .size-opt:hover { border-color: var(--accent); }
+  .size-opt.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .qty-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+  .qty-btn {
+    width: 32px; height: 32px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text);
+    transition: background 0.1s;
+  }
+  .qty-btn:hover { background: var(--bg); }
+  .qty-num { font-size: 16px; font-weight: 700; min-width: 24px; text-align: center; }
+  .modal-price-row {
+    margin-top: 14px;
+    padding: 11px 14px;
+    background: var(--bg);
+    border-radius: var(--radius);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+  .modal-price-label { color: var(--muted); }
+  .modal-price-val { font-weight: 700; }
+  .modal-price-orig { font-size: 11px; color: var(--hint); text-decoration: line-through; margin-right: 6px; }
+  .modal-price-disc { font-weight: 700; color: var(--green); }
+  .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+  .btn-cancel {
+    padding: 10px 16px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--muted);
+  }
+  .btn-cancel:hover { background: var(--bg); }
+  .btn-cart-add {
+    flex: 1;
+    padding: 10px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-cart-add:hover { opacity: 0.85; }
+
+  /* ── DEMO BADGE ── */
+  .demo-badge {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 999;
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════ LOGIN ════════════════ -->
+<div class="screen active" id="loginScreen">
+  <div class="login-page">
+    <div class="login-box">
+      <div class="login-logo">bonera</div>
+      <div class="login-tagline">サプライヤー向け受注システム</div>
+      <div class="field">
+        <label>会社コード</label>
+        <input type="text" id="loginCode" placeholder="例：FC001" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>パスワード</label>
+        <input type="password" id="loginPass" placeholder="パスワードを入力" />
+      </div>
+      <button class="btn-login" onclick="doLogin()">ログイン</button>
+      <div class="login-error" id="loginError">会社コードまたはパスワードが正しくありません</div>
+      <div class="demo-hint">
+        <div class="demo-hint-title">デモ用アカウント</div>
+        <div class="demo-row">
+          <span class="demo-code">FC001 / pass123</span>
+          <span class="demo-disc">割引 15%</span>
+          <button class="demo-use" onclick="fillDemo('FC001','pass123')">使う</button>
+        </div>
+        <div class="demo-row">
+          <span class="demo-code">FC002 / pass456</span>
+          <span class="demo-disc">割引 10%</span>
+          <button class="demo-use" onclick="fillDemo('FC002','pass456')">使う</button>
+        </div>
+        <div class="demo-row">
+          <span class="demo-code">FC003 / pass789</span>
+          <span class="demo-disc none">割引なし</span>
+          <button class="demo-use" onclick="fillDemo('FC003','pass789')">使う</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ ORDER APP ════════════════ -->
+<div class="screen" id="orderScreen">
+  <div class="app-header">
+    <div>
+      <span class="app-logo">bonera<span>受注システム</span></span>
+    </div>
+    <div class="header-right">
+      <span class="user-name" id="headerName"></span>
+      <span class="user-disc" id="headerDisc" style="display:none"></span>
+      <button class="btn-logout" onclick="doLogout()">ログアウト</button>
+    </div>
+  </div>
+
+  <div class="disc-banner hidden" id="discBanner">
+    ✦ <span id="discBannerText"></span>
+  </div>
+
+  <div class="success-bar" id="successBar">
+    ✓ 注文を送信しました。確認メールをお送りします。
+  </div>
+
+  <div class="app-body">
+    <!-- Catalog -->
+    <div class="catalog-panel">
+      <div class="panel-title">商品カタログ</div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterCat('all',this)">すべて</button>
+        <button class="filter-btn" onclick="filterCat('uniform',this)">ユニフォーム</button>
+        <button class="filter-btn" onclick="filterCat('gk',this)">GKウェア</button>
+        <button class="filter-btn" onclick="filterCat('training',this)">トレーニング</button>
+        <button class="filter-btn" onclick="filterCat('bag',this)">バッグ</button>
+        <button class="filter-btn" onclick="filterCat('shoes',this)">シューズ</button>
+      </div>
+      <div class="product-grid" id="productGrid"></div>
+    </div>
+
+    <!-- Cart -->
+    <div class="cart-panel">
+      <div class="panel-title">注文リスト</div>
+      <div class="cart-items" id="cartItems">
+        <div class="cart-empty">
+          <span class="cart-empty-icon">🛒</span>
+          商品を選んで追加してください
+        </div>
+      </div>
+      <div id="cartFooter" style="display:none">
+        <div class="cart-footer">
+          <div class="sum-row"><span>商品種類</span><span id="sumKinds"></span></div>
+          <div class="sum-row"><span>合計数量</span><span id="sumQty"></span></div>
+          <div class="sum-row saving" id="sumSavingRow" style="display:none">
+            <span>割引額</span><span id="sumSaving"></span>
+          </div>
+          <div class="sum-row total"><span>合計金額</span><span id="sumTotal"></span></div>
+          <textarea class="note-area" rows="2" id="noteArea" placeholder="備考（納期希望・その他）"></textarea>
+          <button class="btn-submit" id="submitBtn" onclick="submitOrder()">
+            ↑ 注文を送信する
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ MODAL ════════════════ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-name" id="modalName"></div>
+    <div class="modal-id" id="modalId"></div>
+    <div class="opt-label">カラー</div>
+    <div class="color-opts" id="modalColors"></div>
+    <div class="opt-label">サイズ</div>
+    <div class="size-opts" id="modalSizes"></div>
+    <div class="opt-label">数量</div>
+    <div class="qty-row">
+      <button class="qty-btn" onclick="changeQty(-1)">−</button>
+      <span class="qty-num" id="qtyNum">1</span>
+      <button class="qty-btn" onclick="changeQty(1)">＋</button>
+    </div>
+    <div class="modal-price-row" id="modalPriceRow"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-cart-add" onclick="addToCart()">カートに追加</button>
+    </div>
+  </div>
+</div>
+
+<div class="demo-badge">デモ版</div>
+
+<script>
+/* ── DATA ── */
+const COMPANIES = {
+  'FC001': { name: 'FCサンプル SC',      contact: '山田 太郎', discount: 0.15, pass: 'pass123' },
+  'FC002': { name: 'ブルーイーグルス FC', contact: '佐藤 花子', discount: 0.10, pass: 'pass456' },
+  'FC003': { name: 'グリーンスター AC',  contact: '鈴木 一郎', discount: 0,    pass: 'pass789' },
+};
+
+const PRODUCTS = [
+  { id:'BNR-UNI-001', name:'ゲームシャツ（半袖）', cat:'uniform', icon:'👕', price:6800,
+    colors:['#E63946','#1D3557','#2D6A4F','#333333','#FFFFFF'],
+    colorNames:['レッド','ネイビー','グリーン','ブラック','ホワイト'],
+    sizes:['SS','S','M','L','XL','XXL'] },
+  { id:'BNR-UNI-002', name:'ゲームパンツ', cat:'uniform', icon:'🩳', price:4800,
+    colors:['#E63946','#1D3557','#2D6A4F','#333333','#FFFFFF'],
+    colorNames:['レッド','ネイビー','グリーン','ブラック','ホワイト'],
+    sizes:['SS','S','M','L','XL','XXL'] },
+  { id:'BNR-GK-001', name:'GKシャツ（長袖）', cat:'gk', icon:'🧤', price:7200,
+    colors:['#F4A261','#E76F51','#264653','#333333'],
+    colorNames:['オレンジ','サーモン','ティール','ブラック'],
+    sizes:['S','M','L','XL','XXL'] },
+  { id:'BNR-TRN-001', name:'トレーニングシャツ', cat:'training', icon:'👔', price:4200,
+    colors:['#333333','#1D3557','#E63946'],
+    colorNames:['ブラック','ネイビー','レッド'],
+    sizes:['S','M','L','XL','XXL'] },
+  { id:'BNR-TRN-002', name:'トレーニングパンツ', cat:'training', icon:'🩳', price:3800,
+    colors:['#333333','#1D3557'],
+    colorNames:['ブラック','ネイビー'],
+    sizes:['S','M','L','XL','XXL'] },
+  { id:'BNR-BAG-001', name:'チームバッグ（45L）', cat:'bag', icon:'🎒', price:9800,
+    colors:['#333333','#1D3557','#E63946'],
+    colorNames:['ブラック','ネイビー','レッド'],
+    sizes:['FREE'] },
+  { id:'BNR-SHO-001', name:'トレーニングシューズ', cat:'shoes', icon:'👟', price:12000,
+    colors:['#333333','#FFFFFF'],
+    colorNames:['ブラック','ホワイト'],
+    sizes:['24.0','24.5','25.0','25.5','26.0','26.5','27.0','27.5','28.0'] },
+  { id:'BNR-SHO-002', name:'スパイク（FG）', cat:'shoes', icon:'⚽', price:15000,
+    colors:['#333333','#E63946'],
+    colorNames:['ブラック','レッド'],
+    sizes:['24.0','24.5','25.0','25.5','26.0','26.5','27.0','27.5','28.0'] },
+];
+
+/* ── STATE ── */
+let user = null;
+let cart = [];
+let currentProduct = null;
+let selColor = 0;
+let selSize = null;
+let qty = 1;
+let currentCat = 'all';
+
+/* ── HELPERS ── */
+function fmt(n) { return '¥' + Math.round(n).toLocaleString(); }
+function dp(price) { return user ? Math.round(price * (1 - user.discount)) : price; }
+
+/* ── LOGIN ── */
+function fillDemo(code, pass) {
+  document.getElementById('loginCode').value = code;
+  document.getElementById('loginPass').value = pass;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').classList.contains('active')) doLogin();
+});
+
+function doLogin() {
+  const code = document.getElementById('loginCode').value.trim().toUpperCase();
+  const pass = document.getElementById('loginPass').value;
+  const co = COMPANIES[code];
+  const errEl = document.getElementById('loginError');
+  if (co && co.pass === pass) {
+    user = { ...co, code };
+    errEl.style.display = 'none';
+    showApp();
+  } else {
+    errEl.style.display = 'block';
+  }
+}
+
+function showApp() {
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('orderScreen').classList.add('active');
+  document.getElementById('headerName').textContent = user.name + '　' + user.contact + ' 様';
+  if (user.discount > 0) {
+    const pct = Math.round(user.discount * 100);
+    document.getElementById('headerDisc').textContent = `特別割引 ${pct}% 適用中`;
+    document.getElementById('headerDisc').style.display = 'inline';
+    document.getElementById('discBanner').classList.remove('hidden');
+    document.getElementById('discBannerText').textContent =
+      `${user.name} 様には全商品に特別割引 ${pct}% が適用されています`;
+  }
+  renderProducts();
+}
+
+function doLogout() {
+  user = null; cart = [];
+  document.getElementById('orderScreen').classList.remove('active');
+  document.getElementById('loginScreen').classList.add('active');
+  document.getElementById('loginCode').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('headerDisc').style.display = 'none';
+  document.getElementById('discBanner').classList.add('hidden');
+  document.getElementById('successBar').classList.remove('show');
+}
+
+/* ── CATALOG ── */
+function filterCat(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProducts();
+}
+
+function renderProducts() {
+  const list = currentCat === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.cat === currentCat);
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = list.map(p => {
+    const discPrice = dp(p.price);
+    const hasDisc = user && user.discount > 0;
+    const priceHtml = hasDisc
+      ? `<span class="price-orig">${fmt(p.price)}</span><span class="price-disc">${fmt(discPrice)}</span>`
+      : `<span class="price-normal">${fmt(p.price)}</span>`;
+    const dots = p.colors.slice(0,5).map((c,i) =>
+      `<span class="color-dot-sm" style="background:${c}" title="${p.colorNames[i]}"></span>`
+    ).join('');
+    return `
+      <div class="product-card">
+        <div class="product-icon">${p.icon}</div>
+        <div class="product-id">${p.id}</div>
+        <div class="product-name">${p.name}</div>
+        <div class="price-row">${priceHtml}</div>
+        <div class="color-dots">${dots}${p.colors.length>5?`<span style="font-size:10px;color:var(--hint)">+${p.colors.length-5}</span>`:''}</div>
+        <button class="btn-add" onclick="openModal('${p.id}')">＋ 追加</button>
+      </div>`;
+  }).join('');
+}
+
+/* ── MODAL ── */
+function openModal(id) {
+  currentProduct = PRODUCTS.find(p => p.id === id);
+  selColor = 0; selSize = currentProduct.sizes[0]; qty = 1;
+  document.getElementById('modalName').textContent = currentProduct.name;
+  document.getElementById('modalId').textContent = currentProduct.id;
+  document.getElementById('qtyNum').textContent = 1;
+  document.getElementById('modalColors').innerHTML = currentProduct.colors.map((c, i) =>
+    `<div class="color-opt${i===0?' selected':''}" style="background:${c};${c==='#FFFFFF'?'border:2px solid #ccc':''}"
+      title="${currentProduct.colorNames[i]}" onclick="selectColor(${i},this)"></div>`
+  ).join('');
+  document.getElementById('modalSizes').innerHTML = currentProduct.sizes.map((s, i) =>
+    `<button class="size-opt${i===0?' selected':''}" onclick="selectSize('${s}',this)">${s}</button>`
+  ).join('');
+  updateModalPrice();
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+function updateModalPrice() {
+  if (!currentProduct) return;
+  const orig = currentProduct.price * qty;
+  const discounted = dp(currentProduct.price) * qty;
+  const hasDisc = user && user.discount > 0;
+  const el = document.getElementById('modalPriceRow');
+  if (hasDisc) {
+    el.innerHTML = `<span class="modal-price-label">小計</span>
+      <span><span class="modal-price-orig">${fmt(orig)}</span><span class="modal-price-disc">${fmt(discounted)}</span></span>`;
+  } else {
+    el.innerHTML = `<span class="modal-price-label">小計</span><span class="modal-price-val">${fmt(orig)}</span>`;
+  }
+}
+
+function selectColor(i, el) {
+  selColor = i;
+  document.querySelectorAll('.color-opt').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectSize(s, el) {
+  selSize = s;
+  document.querySelectorAll('.size-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function changeQty(d) {
+  qty = Math.max(1, qty + d);
+  document.getElementById('qtyNum').textContent = qty;
+  updateModalPrice();
+}
+
+function addToCart() {
+  cart.push({
+    id: Date.now(),
+    product: currentProduct,
+    color: currentProduct.colorNames[selColor],
+    colorHex: currentProduct.colors[selColor],
+    size: selSize,
+    qty,
+    unitPrice: dp(currentProduct.price),
+    origPrice: currentProduct.price,
+  });
+  closeModal();
+  renderCart();
+}
+
+/* ── CART ── */
+function removeItem(id) { cart = cart.filter(i => i.id !== id); renderCart(); }
+
+function renderCart() {
+  const el = document.getElementById('cartItems');
+  const footer = document.getElementById('cartFooter');
+  if (cart.length === 0) {
+    el.innerHTML = `<div class="cart-empty"><span class="cart-empty-icon">🛒</span>商品を選んで追加してください</div>`;
+    footer.style.display = 'none';
+    return;
+  }
+  el.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <div class="ci-top">
+        <div>
+          <div class="ci-name">${item.product.name}</div>
+          <div class="ci-code">${item.product.id}</div>
+        </div>
+        <button class="btn-remove" onclick="removeItem(${item.id})">×</button>
+      </div>
+      <div class="ci-detail">
+        <span class="ci-color-dot" style="background:${item.colorHex}"></span>
+        ${item.color} / ${item.size}
+      </div>
+      <div class="ci-price">${fmt(item.unitPrice)} × ${item.qty}点 = ${fmt(item.unitPrice * item.qty)}</div>
+    </div>`).join('');
+
+  const totalQty = cart.reduce((s, i) => s + i.qty, 0);
+  const totalOrig = cart.reduce((s, i) => s + i.origPrice * i.qty, 0);
+  const totalDisc = cart.reduce((s, i) => s + i.unitPrice * i.qty, 0);
+  const saving = totalOrig - totalDisc;
+
+  document.getElementById('sumKinds').textContent = cart.length + ' 種';
+  document.getElementById('sumQty').textContent = totalQty + ' 点';
+  document.getElementById('sumTotal').textContent = fmt(totalDisc);
+
+  const savRow = document.getElementById('sumSavingRow');
+  if (saving > 0) {
+    savRow.style.display = 'flex';
+    document.getElementById('sumSaving').textContent = '−' + fmt(saving);
+  } else {
+    savRow.style.display = 'none';
+  }
+  footer.style.display = 'block';
+}
+
+/* ── SUBMIT ── */
+function submitOrder() {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中…';
+  setTimeout(() => {
+    cart = []; renderCart();
+    document.getElementById('noteArea').value = '';
+    document.getElementById('successBar').classList.add('show');
+    btn.disabled = false;
+    btn.textContent = '↑ 注文を送信する';
+    setTimeout(() => document.getElementById('successBar').classList.remove('show'), 5000);
+  }, 1200);
+}
+</script>
+</body>
+</html>
